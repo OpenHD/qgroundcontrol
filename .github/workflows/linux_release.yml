@@ -1,74 +1,62 @@
-name: Linux Release
+name: build_package_x86_22.04
 
-on: [push]
-
-
-defaults:
-  run:
-    shell: bash
-
+on:
+  push:
+    branches: [ master, "2.0", "2.2.x-evo" ]
 env:
-  SOURCE_DIR:   ${{ github.workspace }}
-  QT_VERSION:   5.15.2
-  ARTIFACT:     QGroundControl.AppImage
-  BUILD_TYPE:   ${{ fromJSON('["DailyBuild", "StableBuild"]')[ github.ref_type == 'tag' || contains(github.ref, 'Stable_' ) ] }}
+  # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
+  BUILD_TYPE: Release
 
 jobs:
   build:
-    runs-on:  ubuntu-22.04
-
+    #runs-on: ubuntu-18.04
+    runs-on: ubuntu-22.04
+    env:
+      CLOUDSMITH_API_KEY: ${{ secrets.CLOUDSMITH_API_KEY }}
     steps:
-      - name: Checkout repo
+      - name: test
+        run: |
+          echo "DT=$(date +'%Y-%m-%d_%H%M')" >> $GITHUB_ENV
+          echo "BRANCH=${GITHUB_REF##*/}" >> $GITHUB_ENV    
+
+      - name: Clean UP
+        run: |
+          sudo rm -Rf *
+              
+      - name: Checkout repository and submodules
         uses: actions/checkout@v3
         with:
           submodules: recursive
-
-      - name: Get all tags for correct version determination
-        working-directory:  ${{ github.workspace }}
+      - name: Install Repository
         run: |
-          git fetch --all --tags -f
-
-      - name: Install Qt
-        uses: jurplel/install-qt-action@v3
-        with:
-          version:      ${{ env.QT_VERSION }}
-          host:         linux
-          target:       desktop
-          dir:          ${{ runner.temp }}
-          modules:      qtcharts
-          setup-python: true
+          sudo apt install -y curl
+          sudo curl -1sLf \
+          'https://dl.cloudsmith.io/public/openhd/openhd-2-2-evo/setup.deb.sh' \
+          | sudo -E bash
+          sudo apt update
+          sudo apt upgrade -y
+          sudo apt remove libunwind-13-dev 
+          sudo apt install -y libunwind-dev libgstreamer-plugins-base1.0-dev
+          sudo apt -y install ruby-dev libfmt-dev mavsdk openhd-qt
+          sudo gem install fpm
+          sudo rm -f /etc/ld.so.conf.d/qt.conf
+          sudo touch /etc/ld.so.conf.d/qt.conf
+          sudo sh -c 'echo "/opt/Qt5.15.7/lib/" >/etc/ld.so.conf.d/qt.conf'
+          sudo ldconfig
+          export PATH="$PATH:/opt/Qt5.15.7/bin/"
+          sudo rm -f /usr/bin/qmake
+          sudo ln -s /opt/Qt5.15.7/bin/qmake /usr/bin/qmake
+          echo "QT successfully linked" 
+          sudo apt install openhd-qt  
 
       - name: Install QGC source dependencies
         run:  sudo apt-get install -y libsdl2-dev
 
       - name: Install Gstreamer
-        run:  sudo apt-get install -y libgstreamer-plugins-base1.0-dev libgstreamer1.0-0:amd64 libgstreamer1.0-dev
-
-      - name: Install ccache
-        run:  sudo apt-get install ccache
+        run:  sudo apt-get install -y libgstreamer1.0-0:amd64 libgstreamer1.0-dev
 
       - name: Install post-link dependencies
         run:  sudo apt-get install -y binutils patchelf
-
-      - name: Prepare ccache timestamp
-        id: ccache_cache_timestamp
-        run: echo "name=timestamp::$(date --utc +'%Y-%m-%d-%H\;%M\;%S')" >> $GITHUB_OUTPUT
-
-      - name: ccache cache files
-        uses: actions/cache@v3
-        with:
-          path:         ~/.ccache
-          key:          ${{ runner.os }}-ccache-${{steps.ccache_cache_timestamp.outputs.timestamp}}
-          restore-keys: ${{ runner.os }}-ccache-
-
-      - name: Setup ccache
-        run: |
-            mkdir -p ~/.ccache
-            echo "base_dir = ${GITHUB_WORKSPACE}" > ~/.ccache/ccache.conf
-            echo "compression = true" >> ~/.ccache/ccache.conf
-            echo "compression_level = 5" >> ~/.ccache/ccache.conf
-            ccache -s
-            ccache -z
 
       - name: Create build directory
         run:  mkdir ${{ runner.temp }}/shadow_build_dir
