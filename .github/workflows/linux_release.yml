@@ -1,15 +1,7 @@
 name: Linux Release
 
-on:
-  push:
-    branches:
-      - 'master'
-      - 'Stable*'
-    tags:
-      - 'v*'
-  pull_request:
-    branches:
-    - '*'
+on: [push]
+
 
 defaults:
   run:
