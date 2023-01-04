@@ -72,6 +72,6 @@ jobs:
               ls -a
               mkdir build
               cd build
-              qmake ../qgroundcontrol.pro
+              qmake ../qgroundcontrol.pro CONFIG+=installer CONFIG+=StableBuild
               make -j2
               make install
