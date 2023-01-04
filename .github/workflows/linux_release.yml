@@ -58,13 +58,9 @@ jobs:
       - name: Install post-link dependencies
         run:  sudo apt-get install -y binutils patchelf
 
-      - name: Create build directory
-        run:  mkdir ${{ runner.temp }}/shadow_build_dir
-
       - name: Build
-        working-directory: ${{ runner.temp }}/shadow_build_dir
         run:  |
               ls -a
-              qmake -r ${SOURCE_DIR}/qgroundcontrol.pro CONFIG+=installer CONFIG+=${BUILD_TYPE}
+              qmake qgroundcontrol.pro
               make -j2
               make install
