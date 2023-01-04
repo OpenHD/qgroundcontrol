@@ -39,6 +39,7 @@ jobs:
           sudo apt install -y libunwind-dev libgstreamer-plugins-base1.0-dev
           sudo apt -y install ruby-dev libfmt-dev mavsdk openhd-qt
           sudo gem install fpm
+          sudo apt install openhd-qt  
           sudo rm -f /etc/ld.so.conf.d/qt.conf
           sudo touch /etc/ld.so.conf.d/qt.conf
           sudo sh -c 'echo "/opt/Qt5.15.7/lib/" >/etc/ld.so.conf.d/qt.conf'
@@ -47,7 +48,6 @@ jobs:
           sudo rm -f /usr/bin/qmake
           sudo ln -s /opt/Qt5.15.7/bin/qmake /usr/bin/qmake
           echo "QT successfully linked" 
-          sudo apt install openhd-qt  
 
       - name: Install QGC source dependencies
         run:  sudo apt-get install -y libsdl2-dev
