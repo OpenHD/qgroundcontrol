@@ -61,6 +61,8 @@ jobs:
       - name: Build
         run:  |
               ls -a
-              qmake qgroundcontrol.pro
+              mkdir build
+              cd build
+              qmake ../qgroundcontrol.pro
               make -j2
               make install
